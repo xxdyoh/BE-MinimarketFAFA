@@ -10,20 +10,15 @@ use Illuminate\Support\Facades\Log;
 
 class SetCabangDatabase
 {
-    public function handle(Request $request, Closure $next)
+     public function handle(Request $request, Closure $next)
     {
-        // 🔥 PRIORITAS: Ambil dari HEADER dulu
-        $cabangDatabase = $request->header('X-Cabang-Database');
-        
-        // Fallback: ambil dari session (kalau ada)
-        if (!$cabangDatabase) {
-            $cabangDatabase = session('cabang_database');
-        }
+        // 🔥 AMBIL DARI SESSION (bukan header)
+        $cabangDatabase = session('cabang_database');
+        $cabangKode = session('user.cabang_kode');
         
         Log::info('SetCabangDatabase', [
-            'from_header' => $request->header('X-Cabang-Database'),
-            'from_session' => session('cabang_database'),
-            'final' => $cabangDatabase
+            'cabang_database' => $cabangDatabase,
+            'cabang_kode' => $cabangKode
         ]);
         
         if (!$cabangDatabase) {
@@ -35,6 +30,9 @@ class SetCabangDatabase
         
         // Switch ke database cabang
         DatabaseManager::switchToCabang($cabangDatabase);
+        
+        // 🔥 SIMPAN KODE CABANG KE REQUEST UNTUK DIGUNAKAN CONTROLLER
+        $request->merge(['cabang_kode' => $cabangKode]);
         
         return $next($request);
     }

@@ -13,55 +13,15 @@ use Carbon\Carbon;
 
 class AuthController extends Controller
 {
-    public function getCabangList()
-    {
-        try {
-            // Ambil daftar cabang dari database PUSAT (bsm)
-            $cabangs = DB::connection('mysql')
-                ->table('tcabang')
-                // ->where('cbg_aktif', 1)
-                ->select('cbg_kode', 'cbg_nama', 'cbg_database')
-                ->get();
-            
-            return response()->json([
-                'success' => true,
-                'data' => $cabangs
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 500);
-        }
-    }
-    
     public function login(Request $request)
     {
         try {
             $request->validate([
-                'cabang_kode' => 'required|string',
                 'username' => 'required|string',
                 'password' => 'required|string'
             ]);
             
-            // 1. Ambil info cabang dari database PUSAT
-            $cabang = DB::connection('mysql')
-                ->table('tcabang')
-                ->where('cbg_kode', $request->cabang_kode)
-                // ->where('cbg_aktif', 1)
-                ->first();
-            
-            if (!$cabang) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Cabang tidak ditemukan'
-                ], 404);
-            }
-            
-            // 2. 🔥 SWITCH ke database CABANG untuk cek user
-            DatabaseManager::switchToCabang($cabang->cbg_database);
-            
-            // 3. Cek user di database CABANG
+            // Cek user di database (tanpa cabang)
             $user = DB::connection('mysql')
                 ->table('tuser')
                 ->where('USER_KODE', $request->username)
@@ -69,36 +29,23 @@ class AuthController extends Controller
                 ->first();
             
             if (!$user) {
-                // Reset ke pusat
-                DatabaseManager::resetToPusat();
-                
                 return response()->json([
                     'success' => false,
                     'message' => 'Username atau password salah'
                 ], 401);
             }
             
-            // 4. 🔥 SIMPAN SESSION dengan nama database cabang
+            // Simpan session (tanpa data cabang)
             session()->regenerate();
             session([
                 'user' => [
                     'kode' => $user->USER_KODE,
-                    'nama' => $user->USER_NAMA,
-                    'cabang_kode' => $cabang->cbg_kode,
-                    'cabang_nama' => $cabang->cbg_nama,
-                    'cabang_database' => $cabang->cbg_database
-                ],
-                'cabang_database' => $cabang->cbg_database
+                    'nama' => $user->USER_NAMA ?? $user->USER_KODE,
+                ]
             ]);
             session()->save();
             
-            Log::info('Login berhasil', [
-                'user' => $user->USER_KODE,
-                'database' => $cabang->cbg_database
-            ]);
-            
-            // 5. Reset ke pusat dulu (nanti middleware yang set ulang)
-            DatabaseManager::resetToPusat();
+            Log::info('Login berhasil', ['user' => $user->USER_KODE]);
             
             return response()->json([
                 'success' => true,
@@ -110,7 +57,6 @@ class AuthController extends Controller
             
         } catch (\Exception $e) {
             Log::error('Login error: ' . $e->getMessage());
-            DatabaseManager::resetToPusat();
             return response()->json([
                 'success' => false,
                 'message' => 'Login gagal: ' . $e->getMessage()
@@ -118,7 +64,6 @@ class AuthController extends Controller
         }
     }
     
-    // GET: api/user
     public function getUser(Request $request)
     {
         if (!session('user')) {
@@ -134,11 +79,9 @@ class AuthController extends Controller
         ]);
     }
     
-    // POST: api/logout
     public function logout(Request $request)
     {
         session()->flush();
-        DatabaseManager::resetToPusat();
         
         return response()->json([
             'success' => true,
