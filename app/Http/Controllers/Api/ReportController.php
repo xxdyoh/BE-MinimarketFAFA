@@ -209,51 +209,50 @@ class ReportController extends Controller
      * LAPORAN PENJUALAN BY NOTA
      */
     public function penjualan(Request $request)
-    {
-        try {
-            $startDate = $request->query('start_date', date('Y-m-d', strtotime('-30 days')));
-            $endDate = $request->query('end_date', date('Y-m-d'));
-            
-            $data = DB::connection('mysql')
-                ->select("
-                    SELECT 
-                        t.so_nomor as Nomor,
-                        MAX(t.so_tanggal) as Tanggal,
-                        MAX(DATE_FORMAT(t.date_create, '%H:%i:%s')) as Jam,
-                        MAX(c.cus_nama) as Customer,
-                        MAX(t.so_amount) as Total,
-                        MAX(t.so_dp) as Cash,
-                        MAX(t.so_card) as Card,
-                        MAX(t.so_no_card) as No_Card,
-                        MAX(t.so_bank_card) as Bank,
-                        MAX(t.so_voucher) as Voucher,
-                        MAX(t.so_no_voucher) as No_Voucher,
-                        MAX(t.so_piutang) as Piutang,
-                        (SELECT SUM(bycd_bayar) FROM tbayarcus_dtl WHERE bycd_fp_nomor = t.so_nomor) as Bayar_Piutang,
-                        MAX(t.so_disc_faktur) as Potongan,
-                        MAX(t.so_ongkir) as Ongkir,
-                        MAX(t.isposting) as IsPosting,
-                        MAX(t.noposting) as NoPosting,
-                        (SELECT ts.tanggal FROM tsetoran as ts WHERE ts.nomor = MAX(t.noposting)) as Tgl_Posting
-                    FROM tso_hdr as t
-                    INNER JOIN tcustomer as c ON TRIM(c.cus_kode) = TRIM(t.so_cus_kode)
-                    WHERE t.so_tanggal BETWEEN ? AND ?
-                    GROUP BY t.so_nomor
-                    ORDER BY Tanggal DESC, t.so_nomor
-                ", [$startDate, $endDate]);
-            
-            return response()->json([
-                'success' => true,
-                'data' => $data
-            ]);
-            
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal: ' . $e->getMessage()
-            ], 500);
-        }
+{
+    try {
+        $startDate = $request->query('start_date', date('Y-m-d', strtotime('-30 days')));
+        $endDate = $request->query('end_date', date('Y-m-d'));
+        
+        $data = DB::connection('mysql')
+            ->select("
+                SELECT 
+                    t.so_nomor as Nomor,
+                    MAX(t.so_tanggal) as Tanggal,
+                    MAX(DATE_FORMAT(t.date_create, '%H:%i:%s')) as Jam,
+                    MAX(c.cus_nama) as Customer,
+                    MAX(t.so_amount) as Total,
+                    MAX(t.so_dp) as Cash,
+                    MAX(t.so_card) as Card,
+                    MAX(t.so_no_card) as No_Card,
+                    MAX(t.so_bank_card) as Bank,
+                    MAX(t.so_voucher) as Voucher,
+                    MAX(t.so_no_voucher) as No_Voucher,
+                    MAX(t.so_piutang) as Piutang,
+                    (SELECT SUM(bycd_bayar) FROM tbayarcus_dtl WHERE bycd_fp_nomor = t.so_nomor) as Bayar_Piutang,
+                    MAX(t.so_disc_faktur) as Potongan,
+                    MAX(t.so_ongkir) as Ongkir,
+                    MAX(t.isposting) as IsPosting,
+                    MAX(t.noposting) as NoPosting
+                FROM tso_hdr as t
+                INNER JOIN tcustomer as c ON TRIM(c.cus_kode) = TRIM(t.so_cus_kode)
+                WHERE t.so_tanggal BETWEEN ? AND ?
+                GROUP BY t.so_nomor
+                ORDER BY Tanggal DESC, t.so_nomor
+            ", [$startDate, $endDate]);
+        
+        return response()->json([
+            'success' => true,
+            'data' => $data
+        ]);
+        
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal: ' . $e->getMessage()
+        ], 500);
     }
+}
 
     /**
      * DETAIL PENJUALAN

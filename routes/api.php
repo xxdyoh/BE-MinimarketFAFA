@@ -42,6 +42,18 @@ Route::middleware(['auth.session'])->group(function () {
         Route::put('/{id}', [BarangController::class, 'update']);
         Route::delete('/{id}', [BarangController::class, 'destroy']);
     });
+
+    Route::get('/barang/search', [BarangController::class, 'search']);
+Route::get('/barang/search-all', [BarangController::class, 'searchAll']);
+Route::get('/customer/search', function (Request $request) {
+    $q = $request->query('q');
+    $query = DB::connection('mysql')->table('tcustomer')
+        ->select('cus_kode as Kode', 'cus_nama as Nama', 'cus_alamat as Alamat', 'cus_kota as Kota', 'cus_telp as Telp');
+    if ($q) {
+        $query->where('cus_kode', 'LIKE', "%{$q}%")->orWhere('cus_nama', 'LIKE', "%{$q}%");
+    }
+    return response()->json(['success' => true, 'data' => $query->limit(50)->get()]);
+});
     
     // CUSTOMER
     Route::prefix('v1/customer')->group(function () {

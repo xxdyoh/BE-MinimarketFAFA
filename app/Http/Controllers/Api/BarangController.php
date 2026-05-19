@@ -698,4 +698,51 @@ public function detailStok($kode)
         ], 500);
     }
 }
+
+public function search(Request $request)
+{
+    $q = $request->query('q');
+    $barang = DB::connection('mysql')
+        ->table('tbarang')
+        ->where('brg_isaktif', 1)
+        ->where(function($query) use ($q) {
+            $query->where('brg_kode', $q)
+                  ->orWhere('brg_barcode', $q)
+                  ->orWhere('brg_barcodebox', $q);
+        })
+        ->select('brg_kode as Kode', 'brg_nama_singkat as Nama', 'brg_hrgjualpcs as Harga_Pcs')
+        ->first();
+    
+    return response()->json(['success' => true, 'data' => $barang]);
+}
+
+public function searchAll(Request $request)
+{
+    $q = $request->query('q');
+    $query = DB::connection('mysql')
+        ->table('tbarang')
+        ->where('brg_isaktif', 1)
+        ->select([
+            'brg_kode as Kode',
+            'brg_barcode as Barcode',
+            'brg_nama_singkat as Nama',
+            DB::raw('(SELECT SUM(mst_stok_in-mst_stok_out) FROM tmasterstok WHERE mst_brg_kode=brg_kode) as Stok'),
+            'brg_barcodebox as BarcodeBox',
+            'brg_hrgjualpcs as Harga_Pcs',
+            'brg_hrgjuallsn as Harga_Slv',
+            'brg_hrgjualcrt as Harga_Crt'
+        ]);
+    
+    if ($q) {
+        $query->where(function($qry) use ($q) {
+            $qry->where('brg_kode', 'LIKE', "%{$q}%")
+                ->orWhere('brg_barcode', 'LIKE', "%{$q}%")
+                ->orWhere('brg_nama_singkat', 'LIKE', "%{$q}%");
+        });
+    }
+    
+    $data = $query->limit(100)->get();
+    return response()->json(['success' => true, 'data' => $data]);
+}
+
 }
