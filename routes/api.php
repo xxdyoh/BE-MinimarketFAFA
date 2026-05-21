@@ -88,6 +88,8 @@ Route::get('/customer/search', function (Request $request) {
         Route::get('pembelian-per-item', [ReportController::class, 'pembelianPerItem']);
         Route::get('/penjualan', [ReportController::class, 'penjualan']);
         Route::get('/penjualan/{nomor}/detail', [ReportController::class, 'penjualanDetail']);
+        Route::get('/penjualan-per-item', [ReportController::class, 'penjualanPerItem']);
+        Route::get('/kartu-stock', [ReportController::class, 'kartuStock']);
     });
     
     // GUDANG

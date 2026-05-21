@@ -209,50 +209,50 @@ class ReportController extends Controller
      * LAPORAN PENJUALAN BY NOTA
      */
     public function penjualan(Request $request)
-{
-    try {
-        $startDate = $request->query('start_date', date('Y-m-d', strtotime('-30 days')));
-        $endDate = $request->query('end_date', date('Y-m-d'));
-        
-        $data = DB::connection('mysql')
-            ->select("
-                SELECT 
-                    t.so_nomor as Nomor,
-                    MAX(t.so_tanggal) as Tanggal,
-                    MAX(DATE_FORMAT(t.date_create, '%H:%i:%s')) as Jam,
-                    MAX(c.cus_nama) as Customer,
-                    MAX(t.so_amount) as Total,
-                    MAX(t.so_dp) as Cash,
-                    MAX(t.so_card) as Card,
-                    MAX(t.so_no_card) as No_Card,
-                    MAX(t.so_bank_card) as Bank,
-                    MAX(t.so_voucher) as Voucher,
-                    MAX(t.so_no_voucher) as No_Voucher,
-                    MAX(t.so_piutang) as Piutang,
-                    (SELECT SUM(bycd_bayar) FROM tbayarcus_dtl WHERE bycd_fp_nomor = t.so_nomor) as Bayar_Piutang,
-                    MAX(t.so_disc_faktur) as Potongan,
-                    MAX(t.so_ongkir) as Ongkir,
-                    MAX(t.isposting) as IsPosting,
-                    MAX(t.noposting) as NoPosting
-                FROM tso_hdr as t
-                INNER JOIN tcustomer as c ON TRIM(c.cus_kode) = TRIM(t.so_cus_kode)
-                WHERE t.so_tanggal BETWEEN ? AND ?
-                GROUP BY t.so_nomor
-                ORDER BY Tanggal DESC, t.so_nomor
-            ", [$startDate, $endDate]);
-        
-        return response()->json([
-            'success' => true,
-            'data' => $data
-        ]);
-        
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal: ' . $e->getMessage()
-        ], 500);
+    {
+        try {
+            $startDate = $request->query('start_date', date('Y-m-d', strtotime('-30 days')));
+            $endDate = $request->query('end_date', date('Y-m-d'));
+            
+            $data = DB::connection('mysql')
+                ->select("
+                    SELECT 
+                        t.so_nomor as Nomor,
+                        MAX(t.so_tanggal) as Tanggal,
+                        MAX(DATE_FORMAT(t.date_create, '%H:%i:%s')) as Jam,
+                        MAX(c.cus_nama) as Customer,
+                        MAX(t.so_amount) as Total,
+                        MAX(t.so_dp) as Cash,
+                        MAX(t.so_card) as Card,
+                        MAX(t.so_no_card) as No_Card,
+                        MAX(t.so_bank_card) as Bank,
+                        MAX(t.so_voucher) as Voucher,
+                        MAX(t.so_no_voucher) as No_Voucher,
+                        MAX(t.so_piutang) as Piutang,
+                        (SELECT SUM(bycd_bayar) FROM tbayarcus_dtl WHERE bycd_fp_nomor = t.so_nomor) as Bayar_Piutang,
+                        MAX(t.so_disc_faktur) as Potongan,
+                        MAX(t.so_ongkir) as Ongkir,
+                        MAX(t.isposting) as IsPosting,
+                        MAX(t.noposting) as NoPosting
+                    FROM tso_hdr as t
+                    INNER JOIN tcustomer as c ON TRIM(c.cus_kode) = TRIM(t.so_cus_kode)
+                    WHERE t.so_tanggal BETWEEN ? AND ?
+                    GROUP BY t.so_nomor
+                    ORDER BY Tanggal DESC, t.so_nomor
+                ", [$startDate, $endDate]);
+            
+            return response()->json([
+                'success' => true,
+                'data' => $data
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal: ' . $e->getMessage()
+            ], 500);
+        }
     }
-}
 
     /**
      * DETAIL PENJUALAN
@@ -282,6 +282,157 @@ class ReportController extends Controller
                     AND so_tanggal BETWEEN ? AND ?
                     ORDER BY sod_nourut
                 ", [$nomor, $startDate, $endDate]);
+            
+            return response()->json([
+                'success' => true,
+                'data' => $data
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * LAPORAN PENJUALAN PER ITEM
+     */
+    public function penjualanPerItem(Request $request)
+    {
+        try {
+            $startDate = $request->query('start_date', date('Y-m-d', strtotime('-30 days')));
+            $endDate = $request->query('end_date', date('Y-m-d'));
+            $isAdmin = $request->query('is_admin', false);
+            
+            $selectFields = "
+                MONTH(t.so_tanggal) as Bulan,
+                YEAR(t.so_tanggal) as Tahun,
+                t.so_nomor as Nota,
+                t.so_tanggal as Tanggal,
+                MAX(c.cus_nama) as Customer,
+                d.sod_brg_kode as Kode,
+                MAX(b.brg_nama) as Nama,
+                MAX(b.brg_satuanpcs) as Satuan,
+                MAX(kt.ktg_nama) as Kategori,
+                SUM(d.sod_qty) as Qty,
+                SUM(((100 - d.sod_discpr) / 100 * d.sod_harga - d.sod_discrp) * d.sod_qty) as Nilai,
+                SUM(((d.sod_discpr * d.sod_harga / 100) + d.sod_discrp) * d.sod_qty) as Disc";
+            
+            // HPP & Margin hanya untuk ADMIN
+            if ($isAdmin) {
+                $selectFields .= ",
+                    SUM(d.sod_qty * d.sod_brg_avgcost) as Hpp,
+                    SUM(((100 - d.sod_discpr) / 100 * d.sod_harga - d.sod_discrp) * d.sod_qty) - SUM(d.sod_qty * d.sod_brg_avgcost) as Margin";
+            }
+            
+            $data = DB::connection('mysql')
+                ->select("
+                    SELECT {$selectFields}
+                    FROM tso_dtl as d
+                    INNER JOIN tso_hdr as t ON t.so_nomor = d.sod_so_nomor
+                    INNER JOIN tbarang as b ON b.brg_kode = d.sod_brg_kode
+                    INNER JOIN tcustomer as c ON c.cus_kode = t.so_cus_kode
+                    LEFT JOIN tkategori as kt ON kt.ktg_kode = d.sod_ktg_kode
+                    WHERE t.so_tanggal BETWEEN ? AND ?
+                    GROUP BY t.so_nomor, t.so_tanggal, d.sod_brg_kode
+                    ORDER BY t.so_tanggal DESC, t.so_nomor
+                ", [$startDate, $endDate]);
+            
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+                'is_admin' => $isAdmin
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * LAPORAN KARTU STOCK
+     */
+    public function kartuStock(Request $request)
+    {
+        try {
+            $startDate = $request->query('start_date', date('Y-m-d', strtotime('-30 days')));
+            $endDate = $request->query('end_date', date('Y-m-d'));
+            $gudang = $request->query('gudang', '');
+            
+            $gudangLike = $gudang ? $gudang . '%' : '%';
+            
+            $data = DB::connection('mysql')
+                ->select("
+                    SELECT 
+                        brg_kode as Kode,
+                        brg_nama as Nama,
+                        ktg_nama as Kategori,
+                        IFNULL(saldoawal, 0) as _Awal,
+                        IFNULL(saldoawal, 0) * brg_hrgbeli as Rp_Awal,
+                        IFNULL(Penjualan, 0) as Penjualan,
+                        IFNULL(Mutasi_in, 0) as Mutasi_in,
+                        IFNULL(Mutasi_out, 0) as Mutasi_out,
+                        IFNULL(Penerimaan, 0) as Penerimaan,
+                        IFNULL(Koreksi, 0) as Koreksi,
+                        IFNULL(Pemusnahan, 0) as Pemusnahan,
+                        IFNULL(Repacking, 0) as Repacking,
+                        IFNULL(Retur_Beli, 0) as Retur_Beli,
+                        IFNULL(akhir, 0) as _Akhir,
+                        IFNULL(akhir, 0) * brg_hrgbeli as Rp_Akhir
+                    FROM (
+                        SELECT 
+                            a.brg_kode, a.brg_nama, kt.ktg_nama, a.brg_hrgbeli,
+                            (SELECT SUM(mst_stok_in - mst_stok_out) FROM tmasterstok 
+                            WHERE mst_brg_kode = a.brg_kode AND mst_tanggal < ? 
+                            AND mst_gdg_kode LIKE ?) as saldoawal,
+                            (SELECT IFNULL(SUM(mst_stok_in - mst_stok_out), 0) FROM tmasterstok 
+                            WHERE mst_noreferensi LIKE '%SAL%' AND mst_brg_kode = a.brg_kode 
+                            AND mst_tanggal BETWEEN ? AND ?) as Penjualan,
+                            (SELECT IFNULL(SUM(mst_stok_in - mst_stok_out), 0) FROM tmasterstok 
+                            WHERE mst_noreferensi LIKE '%MTCI%' AND mst_brg_kode = a.brg_kode 
+                            AND mst_tanggal BETWEEN ? AND ?) as Mutasi_in,
+                            (SELECT IFNULL(SUM(mst_stok_in - mst_stok_out), 0) FROM tmasterstok 
+                            WHERE mst_noreferensi LIKE '%MTC.%' AND mst_brg_kode = a.brg_kode 
+                            AND mst_tanggal BETWEEN ? AND ?) as Mutasi_out,
+                            (SELECT IFNULL(SUM(mst_stok_in - mst_stok_out), 0) FROM tmasterstok 
+                            WHERE mst_noreferensi LIKE '%RI%' AND mst_brg_kode = a.brg_kode 
+                            AND mst_tanggal BETWEEN ? AND ?) as Penerimaan,
+                            (SELECT IFNULL(SUM(mst_stok_in - mst_stok_out), 0) FROM tmasterstok 
+                            WHERE mst_noreferensi LIKE '%KOR%' AND mst_brg_kode = a.brg_kode 
+                            AND mst_tanggal BETWEEN ? AND ?) as Koreksi,
+                            (SELECT IFNULL(SUM(mst_stok_in - mst_stok_out), 0) FROM tmasterstok 
+                            WHERE mst_noreferensi LIKE '%MUS%' AND mst_brg_kode = a.brg_kode 
+                            AND mst_tanggal BETWEEN ? AND ?) as Pemusnahan,
+                            (SELECT IFNULL(SUM(mst_stok_in - mst_stok_out), 0) FROM tmasterstok 
+                            WHERE mst_noreferensi LIKE '%REP%' AND mst_brg_kode = a.brg_kode 
+                            AND mst_tanggal BETWEEN ? AND ?) as Repacking,
+                            (SELECT IFNULL(SUM(mst_stok_in - mst_stok_out), 0) FROM tmasterstok 
+                            WHERE mst_noreferensi LIKE '%RET%' AND mst_brg_kode = a.brg_kode 
+                            AND mst_tanggal BETWEEN ? AND ?) as Retur_Beli,
+                            (SELECT SUM(mst_stok_in - mst_stok_out) FROM tmasterstok 
+                            WHERE mst_brg_kode = a.brg_kode AND mst_tanggal <= ? 
+                            AND mst_gdg_kode LIKE ?) as akhir
+                        FROM tbarang a
+                        INNER JOIN tkategori kt ON kt.ktg_kode = a.brg_ktg_kode
+                    ) final
+                    ORDER BY brg_kode
+                ", [
+                    $startDate, $gudangLike,
+                    $startDate, $endDate,
+                    $startDate, $endDate,
+                    $startDate, $endDate,
+                    $startDate, $endDate,
+                    $startDate, $endDate,
+                    $startDate, $endDate,
+                    $startDate, $endDate,
+                    $startDate, $endDate,
+                    $endDate, $gudangLike
+                ]);
             
             return response()->json([
                 'success' => true,
