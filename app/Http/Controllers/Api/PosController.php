@@ -314,7 +314,7 @@ class PosController extends Controller
                 ->where('user_id', $userId)
                 ->first();
             
-            $kodeKasir = $user ? $user->user_id : str_pad($userId, 2, '0', STR_PAD_LEFT);
+            $kodeKasir = $user ? $userId : $userId;
             
             // Prefix: SAL-{kodeKasir}{Ymd}
             $prefix = 'SAL-' . $kodeKasir . date('Ymd');
