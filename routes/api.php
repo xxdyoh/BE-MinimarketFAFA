@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\BarangController;
 use App\Http\Controllers\Api\DoController;
 use App\Http\Controllers\Api\CustomerController; 
 use App\Http\Controllers\Api\ReportController;  
+use App\Http\Controllers\Api\PosController;  
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
@@ -90,6 +91,21 @@ Route::get('/customer/search', function (Request $request) {
         Route::get('/penjualan/{nomor}/detail', [ReportController::class, 'penjualanDetail']);
         Route::get('/penjualan-per-item', [ReportController::class, 'penjualanPerItem']);
         Route::get('/kartu-stock', [ReportController::class, 'kartuStock']);
+    });
+
+    // POS
+    Route::prefix('pos')->group(function () {
+        Route::get('/cart', [PosController::class, 'getCart']);
+        Route::post('/cart', [PosController::class, 'addToCart']);
+        Route::put('/cart', [PosController::class, 'updateCart']);
+        Route::delete('/cart', [PosController::class, 'removeFromCart']);
+        Route::delete('/cart/clear', [PosController::class, 'clearCart']);
+        Route::post('/pending', [PosController::class, 'pendingTransaction']);
+        Route::get('/pending', [PosController::class, 'getPendingList']);
+        Route::post('/pending/load', [PosController::class, 'loadPending']);
+        Route::get('/barang-detail', [PosController::class, 'getBarangDetail']);
+        Route::get('/no-bon', [PosController::class, 'getNoBon']);
+        Route::post('/bayar', [PosController::class, 'simpanTransaksi']);
     });
     
     // GUDANG
