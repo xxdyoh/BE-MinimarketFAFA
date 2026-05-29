@@ -106,6 +106,10 @@ Route::get('/customer/search', function (Request $request) {
         Route::get('/barang-detail', [PosController::class, 'getBarangDetail']);
         Route::get('/no-bon', [PosController::class, 'getNoBon']);
         Route::post('/bayar', [PosController::class, 'simpanTransaksi']);
+        Route::get('/struk', [PosController::class, 'getStrukByNoBon']);
+        Route::post('/ganti-tipe-harga', [PosController::class, 'gantiTipeHarga']);
+        Route::get('/member', [PosController::class, 'getMemberList']);
+        Route::post('/member', [PosController::class, 'simpanMember']);
     });
     
     // GUDANG

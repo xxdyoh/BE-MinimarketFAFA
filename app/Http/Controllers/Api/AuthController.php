@@ -38,22 +38,24 @@ class AuthController extends Controller
             // Simpan session (tanpa data cabang)
             session()->regenerate();
             session([
-                'user' => [
-                    'kode' => $user->USER_KODE,
-                    'nama' => $user->USER_NAMA ?? $user->USER_KODE,
-                ]
-            ]);
+        'user' => [
+            'id' => $user->user_id,           
+            'kode' => $user->USER_KODE,
+            'nama' => $user->USER_NAMA ?? $user->USER_KODE,
+            'user_id' => $user->user_id,   
+        ]
+    ]);
             session()->save();
             
             Log::info('Login berhasil', ['user' => $user->USER_KODE]);
             
             return response()->json([
-                'success' => true,
-                'message' => 'Login berhasil',
-                'data' => [
-                    'user' => session('user')
-                ]
-            ]);
+        'success' => true,
+        'message' => 'Login berhasil',
+        'data' => [
+            'user' => session('user')
+        ]
+    ]);
             
         } catch (\Exception $e) {
             Log::error('Login error: ' . $e->getMessage());
