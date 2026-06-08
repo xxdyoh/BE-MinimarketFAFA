@@ -471,7 +471,7 @@ class PosController extends Controller
             ->where('id_user', $userId)
             ->delete();
         
-        // 🔥 AMBIL POIN (seperti Delphi: floor(so_amount / 50000))
+        // AMBIL POIN
         if ($customerKode !== '0000000001') {
             $poin = DB::connection('mysql')
                 ->table('tso_hdr')
