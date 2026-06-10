@@ -16,53 +16,64 @@ class ReportController extends Controller
         try {
             $gudang = $request->query('gudang');
             $kategori = $request->query('kategori');
-            
-            $query = DB::connection('mysql')
-                ->table('tbarang')
-                ->select([
-                    'brg_kode as Kode',
-                    'brg_nama as Nama',
-                    'ktg_nama as Kategori',
-                    'brg_isiperCrt as Carton',
-                    'brg_isiperLsn as Box_Rtg',
-                    'gdg_nama as Gudang',
-                    DB::raw('SUM(mst_stok_in - mst_stok_out) as Stok'),
-                    'brg_hrgbeli as HrgBeli',
-                    DB::raw('SUM(mst_stok_in - mst_stok_out) * MAX(brg_hrgbeli) as Nilai'),
-                    'brg_produsen as Produsen',
-                    'brg_min_stok as Min_Stok'
-                ])
-                ->join('tmasterstok', 'mst_brg_kode', '=', 'brg_kode')
-                ->join('tgudang', 'gdg_kode', '=', 'mst_gdg_kode')
-                ->leftJoin('tkategori', 'ktg_kode', '=', 'brg_ktg_kode')
-                ->groupBy(
-                    'mst_gdg_kode', 
-                    'brg_kode', 
-                    'gdg_nama',
-                    'brg_nama',        // ✅ Tambahkan
-                    'ktg_nama',        // ✅ Tambahkan
-                    'brg_isiperCrt',   // ✅ Tambahkan
-                    'brg_isiperLsn',   // ✅ Tambahkan
-                    'brg_hrgbeli',     // ✅ Tambahkan
-                    'brg_produsen',    // ✅ Tambahkan
-                    'brg_min_stok'     // ✅ Tambahkan
-                )
-                ->orderBy('brg_kode');
-            
+
+            $sql = "
+                SELECT
+                    brg_kode AS Kode,
+                    brg_nama AS Nama,
+                    ktg_nama AS Kategori,
+                    brg_isiperCrt AS Carton,
+                    brg_isiperLsn AS Box_Rtg,
+                    gdg_nama AS Gudang,
+                    SUM(mst_stok_in - mst_stok_out) AS Stok,
+                    brg_hrgbeli AS HrgBeli,
+                    SUM(mst_stok_in - mst_stok_out) * brg_hrgbeli AS Nilai,
+                    brg_produsen AS Produsen,
+                    brg_min_stok AS Min_Stok
+                FROM tbarang
+                INNER JOIN tmasterstok
+                    ON mst_brg_kode = brg_kode
+                INNER JOIN tgudang
+                    ON gdg_kode = mst_gdg_kode
+                LEFT JOIN tkategori
+                    ON ktg_kode = brg_ktg_kode
+                WHERE 1=1
+            ";
+
+            $params = [];
+
             if ($gudang) {
-                $query->where('mst_gdg_kode', $gudang);
+                $sql .= " AND mst_gdg_kode = ? ";
+                $params[] = $gudang;
             }
+
             if ($kategori) {
-                $query->where('brg_ktg_kode', $kategori);
+                $sql .= " AND brg_ktg_kode = ? ";
+                $params[] = $kategori;
             }
-            
-            $data = $query->get();
-            
+
+            $sql .= "
+                GROUP BY
+                    mst_gdg_kode,
+                    brg_kode,
+                    gdg_nama,
+                    brg_nama,
+                    ktg_nama,
+                    brg_isiperCrt,
+                    brg_isiperLsn,
+                    brg_hrgbeli,
+                    brg_produsen,
+                    brg_min_stok
+                ORDER BY brg_kode
+            ";
+
+            $data = DB::select($sql, $params);
+
             return response()->json([
                 'success' => true,
                 'data' => $data
             ]);
-            
+
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
