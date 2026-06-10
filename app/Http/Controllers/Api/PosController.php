@@ -116,7 +116,7 @@ class PosController extends Controller
         }
     }
     
-    // Pending transaction (Ctrl+P)
+    // Pending transaction
     public function pendingTransaction(Request $request)
     {
         try {
@@ -170,7 +170,7 @@ class PosController extends Controller
         }
     }
     
-    // Get pending list (Ctrl+S)
+    // Get pending list
     public function getPendingList(Request $request)
     {
         $userId = $request->user_id ?? 1;
@@ -186,7 +186,7 @@ class PosController extends Controller
         return response()->json(['success' => true, 'data' => $data]);
     }
     
-    // Load pending to cart (Ctrl+S select)
+    // Load pending to cart 
     public function loadPending(Request $request)
     {
         try {

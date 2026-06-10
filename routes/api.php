@@ -91,6 +91,7 @@ Route::get('/customer/search', function (Request $request) {
         Route::get('/penjualan/{nomor}/detail', [ReportController::class, 'penjualanDetail']);
         Route::get('/penjualan-per-item', [ReportController::class, 'penjualanPerItem']);
         Route::get('/kartu-stock', [ReportController::class, 'kartuStock']);
+        Route::get('/member', [ReportController::class, 'member']);
     });
 
     // POS

@@ -446,4 +446,81 @@ class ReportController extends Controller
             ], 500);
         }
     }
+
+    /**
+ * LAPORAN MEMBER
+ */
+public function member(Request $request)
+{
+    try {
+        $search = $request->query('search');
+        $sortBy = $request->query('sort_by', 'Kode');
+        $sortOrder = $request->query('sort_order', 'asc');
+        $perPage = $request->query('per_page', 25);
+        
+        $query = DB::connection('mysql')
+            ->table('tcustomer')
+            ->select([
+                'cus_kode as Kode',
+                'cus_nama as Nama',
+                'cus_alamat as Alamat',
+                'cus_kota as Kota',
+                'cus_telp as Telp',
+                'cus_fax as Fax',
+                'date_create as Tgl_Daftar',
+                'cus_poin as Poin'
+            ]);
+        
+        // Global search
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('cus_kode', 'LIKE', "%{$search}%")
+                  ->orWhere('cus_nama', 'LIKE', "%{$search}%")
+                  ->orWhere('cus_alamat', 'LIKE', "%{$search}%")
+                  ->orWhere('cus_kota', 'LIKE', "%{$search}%")
+                  ->orWhere('cus_telp', 'LIKE', "%{$search}%");
+            });
+        }
+        
+        // Sorting
+        $sortColumnMap = [
+            'Kode' => 'cus_kode',
+            'Nama' => 'cus_nama',
+            'Alamat' => 'cus_alamat',
+            'Kota' => 'cus_kota',
+            'Telp' => 'cus_telp',
+            'Fax' => 'cus_fax',
+            'Tgl_Daftar' => 'date_create',
+            'Poin' => 'cus_poin',
+        ];
+        
+        $sortColumn = $sortColumnMap[$sortBy] ?? 'cus_kode';
+        $query->orderBy($sortColumn, $sortOrder);
+        
+        $members = $query->paginate($perPage);
+        
+        // Total poin semua member
+        $totalPoin = DB::connection('mysql')
+            ->table('tcustomer')
+            ->sum('cus_poin');
+        
+        return response()->json([
+            'success' => true,
+            'data' => $members->items(),
+            'total_poin' => (int) $totalPoin,
+            'pagination' => [
+                'current_page' => $members->currentPage(),
+                'per_page' => $members->perPage(),
+                'total' => $members->total(),
+                'last_page' => $members->lastPage()
+            ]
+        ]);
+        
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal mengambil data: ' . $e->getMessage()
+        ], 500);
+    }
+}
 }
