@@ -549,43 +549,14 @@ public function koreksiStok(Request $request)
         
         $query = DB::connection('mysql')
             ->select("
-                SELECT DISTINCT 
-                    x.mst_brg_kode as Kode,
-                    brg_nama as Nama,
-                    Stok,
-                    ktg_nama as Kategori,
-                    tanggal_koreksi as Tgl_Koreksi,
-                    tanggal_beli as Tgl_Beli,
-                    tanggal_jual as Tgl_Jual
-                FROM tmasterstok x
-                INNER JOIN tbarang y ON y.brg_kode = x.mst_brg_kode
-                INNER JOIN tkategori ON ktg_kode = brg_ktg_kode
-                LEFT JOIN (
-                    SELECT mst_brg_kode, SUM(mst_stok_in - mst_stok_out) as Stok 
-                    FROM tmasterstok 
-                    GROUP BY mst_brg_kode
-                ) a ON a.mst_brg_kode = y.brg_kode
-                LEFT JOIN (
-                    SELECT mst_brg_kode as kode_koreksi, MAX(mst_tanggal) as tanggal_koreksi 
-                    FROM tmasterstok 
-                    WHERE mst_noreferensi LIKE '%KOR%' 
-                    AND mst_tanggal > ?
-                    GROUP BY mst_brg_kode
-                ) b ON x.mst_brg_kode = b.kode_koreksi
-                LEFT JOIN (
-                    SELECT mst_brg_kode as kode_beli, MAX(mst_tanggal) as tanggal_beli 
-                    FROM tmasterstok 
-                    WHERE mst_noreferensi LIKE '%RI%' 
-                    GROUP BY mst_brg_kode
-                ) c ON x.mst_brg_kode = c.kode_beli
-                LEFT JOIN (
-                    SELECT mst_brg_kode as kode_jual, MAX(mst_tanggal) as tanggal_jual 
-                    FROM tmasterstok 
-                    WHERE mst_noreferensi LIKE '%SAL%' 
-                    GROUP BY mst_brg_kode
-                ) d ON x.mst_brg_kode = d.kode_jual
-                WHERE b.tanggal_koreksi IS NOT NULL
-                ORDER BY " . $sortBy . " " . $sortOrder . "
+                SELECT DISTINCT x.mst_brg_kode Kode,brg_nama Nama,Stok ,ktg_nama Kategori,tanggal_koreksi Tgl_Koreksi,tanggal_beli Tgl_Beli,tanggal_jual Tgl_Jual FROM tmasterstok x
+INNER JOIN tbarang y ON y.brg_kode=x.mst_brg_kode
+INNER JOIN tkategori ON ktg_kode=brg_ktg_kode
+left JOIN (SELECT mst_brg_kode, SUM(mst_stok_in-mst_stok_out) stok FROM tmasterstok GROUP BY mst_brg_kode) a ON a.mst_brg_kode=y.brg_kode
+LEFT JOIN  (SELECT mst_brg_kode kode_koreksi,max(mst_tanggal) tanggal_koreksi FROM tmasterstok WHERE mst_noreferensi  LIKE '%KOR%'  and mst_tanggal > ? GROUP BY mst_brg_kode) b ON x.mst_brg_kode=b.kode_koreksi
+LEFT JOIN  (SELECT mst_brg_kode kode_beli,max(mst_tanggal) tanggal_beli FROM tmasterstok WHERE mst_noreferensi  LIKE '%RI%'   GROUP BY mst_brg_kode) c ON x.mst_brg_kode=c.kode_beli
+LEFT JOIN  (SELECT mst_brg_kode kode_jual,max(mst_tanggal) tanggal_jual FROM tmasterstok WHERE mst_noreferensi  LIKE '%SAL%'   GROUP BY mst_brg_kode) d ON x.mst_brg_kode=d.kode_jual
+ORDER BY " . $sortBy . " " . $sortOrder . "
             ", [$tanggal]);
         
         // Convert ke collection untuk search & pagination manual
