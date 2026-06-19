@@ -535,6 +535,7 @@ public function member(Request $request)
     }
 }
 
+<<<<<<< HEAD
 
 /* LAPORAN BIAYA */
 public function pembayaranlain(Request $request)
@@ -569,10 +570,74 @@ public function pembayaranlain(Request $request)
 
     } catch (\Exception $e) {
 
+=======
+/**
+ * LAPORAN KOREKSI STOK
+ */
+public function koreksiStok(Request $request)
+{
+    try {
+        $tanggal = $request->query('tanggal', '2026-04-09');
+        $search = $request->query('search');
+        $sortBy = $request->query('sort_by', 'Kode');
+        $sortOrder = $request->query('sort_order', 'asc');
+        $perPage = $request->query('per_page', 25);
+        
+        $query = DB::connection('mysql')
+            ->select("
+                SELECT DISTINCT x.mst_brg_kode Kode,brg_nama Nama,Stok ,ktg_nama Kategori,tanggal_koreksi Tgl_Koreksi,tanggal_beli Tgl_Beli,tanggal_jual Tgl_Jual FROM tmasterstok x
+INNER JOIN tbarang y ON y.brg_kode=x.mst_brg_kode
+INNER JOIN tkategori ON ktg_kode=brg_ktg_kode
+left JOIN (SELECT mst_brg_kode, SUM(mst_stok_in-mst_stok_out) stok FROM tmasterstok GROUP BY mst_brg_kode) a ON a.mst_brg_kode=y.brg_kode
+LEFT JOIN  (SELECT mst_brg_kode kode_koreksi,max(mst_tanggal) tanggal_koreksi FROM tmasterstok WHERE mst_noreferensi  LIKE '%KOR%'  and mst_tanggal > ? GROUP BY mst_brg_kode) b ON x.mst_brg_kode=b.kode_koreksi
+LEFT JOIN  (SELECT mst_brg_kode kode_beli,max(mst_tanggal) tanggal_beli FROM tmasterstok WHERE mst_noreferensi  LIKE '%RI%'   GROUP BY mst_brg_kode) c ON x.mst_brg_kode=c.kode_beli
+LEFT JOIN  (SELECT mst_brg_kode kode_jual,max(mst_tanggal) tanggal_jual FROM tmasterstok WHERE mst_noreferensi  LIKE '%SAL%'   GROUP BY mst_brg_kode) d ON x.mst_brg_kode=d.kode_jual
+ORDER BY " . $sortBy . " " . $sortOrder . "
+            ", [$tanggal]);
+        
+        // Convert ke collection untuk search & pagination manual
+        $collection = collect($query);
+        
+        // Search
+        if ($search) {
+            $collection = $collection->filter(function($item) use ($search) {
+                return stripos($item->Kode, $search) !== false ||
+                       stripos($item->Nama, $search) !== false ||
+                       stripos($item->Kategori, $search) !== false;
+            });
+        }
+        
+        $total = $collection->count();
+        $totalDikoreksi = $collection->whereNotNull('Tgl_Koreksi')->count();
+        $persentase = $total > 0 ? round(($totalDikoreksi / $total) * 100, 1) : 0;
+        
+        // Manual pagination
+        $page = $request->query('page', 1);
+        $items = $collection->forPage($page, $perPage)->values();
+        
+        return response()->json([
+            'success' => true,
+            'data' => $items,
+            'summary' => [
+                'total_item' => $total,
+                'total_dikoreksi' => $totalDikoreksi,
+                'persentase' => $persentase
+            ],
+            'pagination' => [
+                'current_page' => (int)$page,
+                'per_page' => (int)$perPage,
+                'total' => $total,
+                'last_page' => (int)ceil($total / $perPage)
+            ]
+        ]);
+        
+    } catch (\Exception $e) {
+>>>>>>> 05748d0188c52b5c53903591f061ca0ef5d84622
         return response()->json([
             'success' => false,
             'message' => 'Gagal mengambil data: ' . $e->getMessage()
         ], 500);
+<<<<<<< HEAD
 
     }
 }
@@ -615,6 +680,8 @@ public function pembayaranlaindetail($nomor, Request $request)
             'message' => 'Gagal mengambil detail: ' . $e->getMessage()
         ], 500);
 
+=======
+>>>>>>> 05748d0188c52b5c53903591f061ca0ef5d84622
     }
 }
 }
