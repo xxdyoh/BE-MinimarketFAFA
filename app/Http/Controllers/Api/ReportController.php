@@ -535,7 +535,6 @@ public function member(Request $request)
     }
 }
 
-<<<<<<< HEAD
 
 /* LAPORAN BIAYA */
 public function pembayaranlain(Request $request)
@@ -570,10 +569,55 @@ public function pembayaranlain(Request $request)
 
     } catch (\Exception $e) {
 
-=======
-/**
- * LAPORAN KOREKSI STOK
- */
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal mengambil data: ' . $e->getMessage()
+        ], 500);
+
+    }
+}
+
+
+public function pembayaranlaindetail($nomor, Request $request)
+{
+    try {
+
+        $startDate = $request->query('start_date', date('Y-m-d', strtotime('-30 days')));
+        $endDate   = $request->query('end_date', date('Y-m-d'));
+
+        $data = DB::connection('mysql')
+            ->table('tjurnal')
+            ->select([
+                'jurd_jur_no as Nomor',
+                'jurd_rek_kode as Kode',
+                'rek_nama as nama_rekening',
+                'jurd_debet as Nilai',
+                'jurd_keterangan as Keterangan'
+            ])
+            ->join('tjurnalitem', 'jurd_jur_no', '=', 'jur_no')
+            ->join('trekening', 'rek_kode', '=', 'jurd_rek_kode')
+            ->where('jur_tipetransaksi', 'Pembayaran Lain')
+            ->where('jur_no', $nomor)
+            ->whereBetween('jur_tanggal', [$startDate, $endDate])
+            ->where('jurd_debet', '>', 0)
+            ->orderBy('jurd_rek_kode')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $data
+        ]);
+
+    } catch (\Exception $e) {
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal mengambil detail: ' . $e->getMessage()
+        ], 500);
+
+    }
+}
+
 public function koreksiStok(Request $request)
 {
     try {
@@ -632,56 +676,10 @@ ORDER BY " . $sortBy . " " . $sortOrder . "
         ]);
         
     } catch (\Exception $e) {
->>>>>>> 05748d0188c52b5c53903591f061ca0ef5d84622
         return response()->json([
             'success' => false,
             'message' => 'Gagal mengambil data: ' . $e->getMessage()
         ], 500);
-<<<<<<< HEAD
-
-    }
-}
-
-
-public function pembayaranlaindetail($nomor, Request $request)
-{
-    try {
-
-        $startDate = $request->query('start_date', date('Y-m-d', strtotime('-30 days')));
-        $endDate   = $request->query('end_date', date('Y-m-d'));
-
-        $data = DB::connection('mysql')
-            ->table('tjurnal')
-            ->select([
-                'jurd_jur_no as Nomor',
-                'jurd_rek_kode as Kode',
-                'rek_nama as nama_rekening',
-                'jurd_debet as Nilai',
-                'jurd_keterangan as Keterangan'
-            ])
-            ->join('tjurnalitem', 'jurd_jur_no', '=', 'jur_no')
-            ->join('trekening', 'rek_kode', '=', 'jurd_rek_kode')
-            ->where('jur_tipetransaksi', 'Pembayaran Lain')
-            ->where('jur_no', $nomor)
-            ->whereBetween('jur_tanggal', [$startDate, $endDate])
-            ->where('jurd_debet', '>', 0)
-            ->orderBy('jurd_rek_kode')
-            ->get();
-
-        return response()->json([
-            'success' => true,
-            'data' => $data
-        ]);
-
-    } catch (\Exception $e) {
-
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal mengambil detail: ' . $e->getMessage()
-        ], 500);
-
-=======
->>>>>>> 05748d0188c52b5c53903591f061ca0ef5d84622
     }
 }
 }

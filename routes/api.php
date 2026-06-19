@@ -92,12 +92,9 @@ Route::get('/customer/search', function (Request $request) {
         Route::get('/penjualan-per-item', [ReportController::class, 'penjualanPerItem']);
         Route::get('/kartu-stock', [ReportController::class, 'kartuStock']);
         Route::get('/member', [ReportController::class, 'member']);
-<<<<<<< HEAD
+		Route::get('/koreksi-stok', [ReportController::class, 'koreksiStok']);		
 		Route::get('/pembayaranlain', [ReportController::class, 'pembayaranlain']);
         Route::get('/pembayaranlain/{nomor}/detail', [ReportController::class, 'pembayaranlaindetail']);
-=======
-        Route::get('/koreksi-stok', [ReportController::class, 'koreksiStok']);
->>>>>>> 05748d0188c52b5c53903591f061ca0ef5d84622
     });
 
     // POS
